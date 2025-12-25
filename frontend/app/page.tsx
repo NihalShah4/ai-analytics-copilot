@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { uploadCsv, getPreview, getProfile } from "./api";
+import { uploadCsv, getPreview, getProfile, explainProfile } from "./api";
+
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -9,11 +11,15 @@ export default function Home() {
   const [preview, setPreview] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [error, setError] = useState<string>("");
+  const [explanation, setExplanation] = useState<string>("");
+  const [loadingExplain, setLoadingExplain] = useState<boolean>(false);
+
 
   async function handleUpload() {
     setError("");
     setPreview(null);
     setProfile(null);
+    setExplanation("");
 
     if (!file) {
       setError("Please select a CSV file first.");
@@ -25,6 +31,22 @@ export default function Home() {
       setDatasetId(result.dataset_id);
     } catch (e: any) {
       setError(e.message || "Upload failed.");
+    }
+  }
+
+  async function handleExplain() {
+    setError("");
+    setExplanation("");
+    if (!datasetId) return;
+
+    try {
+      setLoadingExplain(true);
+      const result = await explainProfile(datasetId);
+      setExplanation(result.explanation || "");
+    } catch (e: any) {
+      setError(e.message || "Explain failed.");
+    } finally {
+      setLoadingExplain(false);
     }
   }
 
@@ -74,6 +96,9 @@ export default function Home() {
           <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
             <button onClick={handlePreview}>Load Preview</button>
             <button onClick={handleProfile}>Load Profile</button>
+            <button onClick={handleExplain} disabled={loadingExplain}>
+              {loadingExplain ? "Explaining..." : "Explain Profile"}
+            </button>
           </div>
         </div>
       )}
@@ -245,6 +270,15 @@ export default function Home() {
               {JSON.stringify(profile, null, 2)}
             </pre>
           </details>
+        </section>
+      )}
+
+      {explanation && (
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 18 }}>AI Explanation</h2>
+          <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, background: "#f6f6f6" }}>
+            <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{explanation}</pre>
+          </div>
         </section>
       )}
     </main>
