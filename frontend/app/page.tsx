@@ -147,9 +147,104 @@ export default function Home() {
       {profile && (
         <section style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 18 }}>Profile</h2>
-          <pre style={{ background: "#f6f6f6", padding: 12, borderRadius: 6, overflowX: "auto" }}>
-            {JSON.stringify(profile, null, 2)}
-          </pre>
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+            <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, minWidth: 180 }}>
+              <div style={{ color: "#666", fontSize: 12 }}>Rows</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{profile.shape?.[0]}</div>
+            </div>
+
+            <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, minWidth: 180 }}>
+              <div style={{ color: "#666", fontSize: 12 }}>Columns</div>
+              <div style={{ fontSize: 20, fontWeight: 700 }}>{profile.shape?.[1]}</div>
+            </div>
+          </div>
+
+          {/* Missing values */}
+          <h3 style={{ fontSize: 16, marginTop: 18 }}>Missing values</h3>
+          <div style={{ overflowX: "auto", border: "1px solid #ddd", borderRadius: 6 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Column</th>
+                  <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Missing</th>
+                  <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Missing %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(profile.missing || {})
+                  .slice(0, 15)
+                  .map(([col, stats]: any) => (
+                    <tr key={col}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{col}</td>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{stats.missing_count}</td>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{stats.missing_pct}%</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Numeric summary */}
+          <h3 style={{ fontSize: 16, marginTop: 18 }}>Numeric summary</h3>
+          {Object.keys(profile.numeric_summary || {}).length === 0 ? (
+            <div style={{ color: "#666" }}>No numeric columns detected.</div>
+          ) : (
+            <div style={{ overflowX: "auto", border: "1px solid #ddd", borderRadius: 6 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Column</th>
+                    <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Count</th>
+                    <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Mean</th>
+                    <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Std</th>
+                    <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Min</th>
+                    <th style={{ textAlign: "left", padding: "10px 12px", borderBottom: "1px solid #ddd", background: "#f6f6f6" }}>Max</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(profile.numeric_summary).map(([col, s]: any) => (
+                    <tr key={col}>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee", whiteSpace: "nowrap" }}>{col}</td>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{s.count}</td>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{Number(s.mean).toFixed(3)}</td>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{s.std === null ? "" : Number(s.std).toFixed(3)}</td>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{s.min}</td>
+                      <td style={{ padding: "10px 12px", borderBottom: "1px solid #eee" }}>{s.max}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Categorical top values */}
+          <h3 style={{ fontSize: 16, marginTop: 18 }}>Top values (categorical)</h3>
+          {Object.keys(profile.categorical_top_values || {}).length === 0 ? (
+            <div style={{ color: "#666" }}>No categorical columns detected.</div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+              {Object.entries(profile.categorical_top_values).map(([col, items]: any) => (
+                <div key={col} style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 8 }}>{col}</div>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {items.slice(0, 5).map((it: any, i: number) => (
+                      <li key={i}>
+                        <span style={{ color: "#444" }}>{it.value ?? "null"}</span> ({it.count})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <details style={{ marginTop: 12 }}>
+            <summary style={{ cursor: "pointer" }}>Show raw JSON</summary>
+            <pre style={{ background: "#f6f6f6", padding: 12, borderRadius: 6, overflowX: "auto" }}>
+              {JSON.stringify(profile, null, 2)}
+            </pre>
+          </details>
         </section>
       )}
     </main>
