@@ -85,3 +85,17 @@ export async function getFeatureIdeas(datasetId: string) {
 
   return res.json();
 }
+
+export async function getModelingSuggestions(datasetId: string) {
+  const res = await fetch(
+    `http://127.0.0.1:8000/datasets/${datasetId}/modeling-suggestions`,
+    { method: "POST" }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Modeling suggestions failed");
+  }
+
+  return res.json();
+}

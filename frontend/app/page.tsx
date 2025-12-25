@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { uploadCsv, getPreview, getProfile, explainProfile, getColumns, explainColumn, getFeatureIdeas } from "./api";
-
+import { uploadCsv, getPreview, getProfile, explainProfile, getColumns, explainColumn, getFeatureIdeas, getModelingSuggestions} from "./api";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
@@ -18,6 +17,9 @@ export default function Home() {
   const [loadingColumnExplain, setLoadingColumnExplain] = useState<boolean>(false);
   const [featureIdeas, setFeatureIdeas] = useState<string>("");
   const [loadingFeatureIdeas, setLoadingFeatureIdeas] = useState<boolean>(false);
+  const [modelingSuggestions, setModelingSuggestions] = useState<string>("");
+  const [loadingModeling, setLoadingModeling] = useState<boolean>(false);
+
 
   async function handleUpload() {
     setError("");
@@ -25,6 +27,8 @@ export default function Home() {
     setProfile(null);
     setExplanation("");
     setFeatureIdeas("");
+    setModelingSuggestions("");
+
 
     if (!file) {
       setError("Please select a CSV file first.");
@@ -119,6 +123,24 @@ export default function Home() {
     }
   }
 
+  async function handleModelingSuggestions() {
+    setError("");
+    setModelingSuggestions("");
+
+    if (!datasetId) return;
+
+    try {
+      setLoadingModeling(true);
+      const result = await getModelingSuggestions(datasetId);
+      setModelingSuggestions(result.suggestions || "");
+    } catch (e: any) {
+      setError(e.message || "Modeling suggestions failed.");
+    } finally {
+      setLoadingModeling(false);
+    }
+  }
+
+
   return (
     <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "Arial, sans-serif" }}>
       <h1 style={{ fontSize: 24, marginBottom: 8 }}>AI Analytics Copilot (Starter)</h1>
@@ -146,6 +168,9 @@ export default function Home() {
             </button>
             <button onClick={handleFeatureIdeas} disabled={loadingFeatureIdeas}>
               {loadingFeatureIdeas ? "Generating..." : "Feature Engineering Ideas"}
+            </button>
+            <button onClick={handleModelingSuggestions} disabled={loadingModeling}>
+              {loadingModeling ? "Analyzing..." : "Modeling Suggestions"}
             </button>
           </div>
         </div>
@@ -365,6 +390,15 @@ export default function Home() {
           <h2 style={{ fontSize: 18 }}>AI Feature Engineering Ideas</h2>
           <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, background: "#f6f6f6" }}>
             <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{featureIdeas}</pre>
+          </div>
+        </section>
+      )}
+
+      {modelingSuggestions && (
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 18 }}>AI Modeling Suggestions</h2>
+          <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, background: "#f6f6f6" }}>
+            <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{modelingSuggestions}</pre>
           </div>
         </section>
       )}
