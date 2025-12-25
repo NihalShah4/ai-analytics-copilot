@@ -51,3 +51,37 @@ export async function explainProfile(datasetId: string) {
 
   return res.json();
 }
+
+export async function getColumns(datasetId: string) {
+  const res = await fetch(`http://127.0.0.1:8000/datasets/${datasetId}/columns`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Get columns failed");
+  }
+  return res.json();
+}
+
+export async function explainColumn(datasetId: string, column: string) {
+  const url = new URL(`http://127.0.0.1:8000/datasets/${datasetId}/explain-column`);
+  url.searchParams.set("column", column);
+
+  const res = await fetch(url.toString(), { method: "POST" });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Explain column failed");
+  }
+  return res.json();
+}
+
+export async function getFeatureIdeas(datasetId: string) {
+  const res = await fetch(`http://127.0.0.1:8000/datasets/${datasetId}/feature-ideas`, {
+    method: "POST",
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Feature ideas failed");
+  }
+
+  return res.json();
+}

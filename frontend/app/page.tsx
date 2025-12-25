@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { uploadCsv, getPreview, getProfile } from "./api";
-import { uploadCsv, getPreview, getProfile, explainProfile } from "./api";
+import { uploadCsv, getPreview, getProfile, explainProfile, getColumns, explainColumn, getFeatureIdeas } from "./api";
 
 
 export default function Home() {
@@ -13,13 +12,19 @@ export default function Home() {
   const [error, setError] = useState<string>("");
   const [explanation, setExplanation] = useState<string>("");
   const [loadingExplain, setLoadingExplain] = useState<boolean>(false);
-
+  const [columns, setColumns] = useState<string[]>([]);
+  const [selectedColumn, setSelectedColumn] = useState<string>("");
+  const [columnExplanation, setColumnExplanation] = useState<string>("");
+  const [loadingColumnExplain, setLoadingColumnExplain] = useState<boolean>(false);
+  const [featureIdeas, setFeatureIdeas] = useState<string>("");
+  const [loadingFeatureIdeas, setLoadingFeatureIdeas] = useState<boolean>(false);
 
   async function handleUpload() {
     setError("");
     setPreview(null);
     setProfile(null);
     setExplanation("");
+    setFeatureIdeas("");
 
     if (!file) {
       setError("Please select a CSV file first.");
@@ -29,6 +34,12 @@ export default function Home() {
     try {
       const result = await uploadCsv(file);
       setDatasetId(result.dataset_id);
+
+      // fetch columns
+      const colsResp = await getColumns(result.dataset_id);
+      setColumns(colsResp.columns || []);
+      setSelectedColumn(colsResp.columns?.[0] || "");
+      setColumnExplanation("");
     } catch (e: any) {
       setError(e.message || "Upload failed.");
     }
@@ -74,6 +85,40 @@ export default function Home() {
     }
   }
 
+  async function handleExplainColumn() {
+    setError("");
+    setColumnExplanation("");
+
+    if (!datasetId || !selectedColumn) return;
+
+    try {
+      setLoadingColumnExplain(true);
+      const result = await explainColumn(datasetId, selectedColumn);
+      setColumnExplanation(result.explanation || "");
+    } catch (e: any) {
+      setError(e.message || "Explain column failed.");
+    } finally {
+      setLoadingColumnExplain(false);
+    }
+  }
+
+  async function handleFeatureIdeas() {
+    setError("");
+    setFeatureIdeas("");
+
+    if (!datasetId) return;
+
+    try {
+      setLoadingFeatureIdeas(true);
+      const result = await getFeatureIdeas(datasetId);
+      setFeatureIdeas(result.ideas || "");
+    } catch (e: any) {
+      setError(e.message || "Feature ideas failed.");
+    } finally {
+      setLoadingFeatureIdeas(false);
+    }
+  }
+
   return (
     <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "Arial, sans-serif" }}>
       <h1 style={{ fontSize: 24, marginBottom: 8 }}>AI Analytics Copilot (Starter)</h1>
@@ -99,7 +144,31 @@ export default function Home() {
             <button onClick={handleExplain} disabled={loadingExplain}>
               {loadingExplain ? "Explaining..." : "Explain Profile"}
             </button>
+            <button onClick={handleFeatureIdeas} disabled={loadingFeatureIdeas}>
+              {loadingFeatureIdeas ? "Generating..." : "Feature Engineering Ideas"}
+            </button>
           </div>
+        </div>
+      )}
+
+      {columns.length > 0 && (
+        <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <label style={{ color: "#ddd" }}>Explain column:</label>
+          <select
+            value={selectedColumn}
+            onChange={(e) => setSelectedColumn(e.target.value)}
+            style={{ padding: "6px 8px" }}
+          >
+            {columns.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+
+          <button onClick={handleExplainColumn} disabled={loadingColumnExplain}>
+            {loadingColumnExplain ? "Explaining..." : "Explain Column"}
+          </button>
         </div>
       )}
 
@@ -273,11 +342,29 @@ export default function Home() {
         </section>
       )}
 
+      {columnExplanation && (
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 18 }}>AI Column Explanation: {selectedColumn}</h2>
+          <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, background: "#f6f6f6" }}>
+            <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{columnExplanation}</pre>
+          </div>
+        </section>
+      )}
+
       {explanation && (
         <section style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 18 }}>AI Explanation</h2>
           <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, background: "#f6f6f6" }}>
             <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{explanation}</pre>
+          </div>
+        </section>
+      )}
+
+      {featureIdeas && (
+        <section style={{ marginTop: 24 }}>
+          <h2 style={{ fontSize: 18 }}>AI Feature Engineering Ideas</h2>
+          <div style={{ border: "1px solid #ddd", borderRadius: 6, padding: 12, background: "#f6f6f6" }}>
+            <pre style={{ margin: 0, whiteSpace: "pre-wrap" }}>{featureIdeas}</pre>
           </div>
         </section>
       )}
