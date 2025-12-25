@@ -137,3 +137,46 @@ Keep it concise but useful.
 
     text = await call_ollama(prompt)
     return {"dataset_id": dataset_id, "model": OLLAMA_MODEL, "ideas": text}
+
+@router.post("/datasets/{dataset_id}/modeling-suggestions")
+async def modeling_suggestions(dataset_id: str):
+    file_path = DATASETS_DIR / f"{dataset_id}.csv"
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Dataset not found.")
+
+    df = read_csv_safely(file_path)
+    prof = profile_dataframe(df)
+
+    samples = {}
+    for col in df.columns:
+        samples[col] = df[col].dropna().head(5).astype("string").tolist()
+
+    prompt = f"""
+You are a senior data scientist.
+
+Based on the dataset profile and sample values below, provide modeling guidance.
+
+Include sections:
+1) Problem framing (classification, regression, clustering, etc.)
+2) Potential target variable(s) and justification
+3) Baseline models to start with
+4) More advanced models (if data supports it)
+5) Recommended evaluation metrics
+6) Validation strategy (train/test split, cross-validation, time-based split)
+7) Key risks and pitfalls (imbalance, leakage, small data, bias)
+
+Dataset profile (JSON):
+{prof}
+
+Sample values (JSON):
+{samples}
+
+Be practical and concise. Assume the user wants to build a real model.
+""".strip()
+
+    text = await call_ollama(prompt)
+    return {
+        "dataset_id": dataset_id,
+        "model": OLLAMA_MODEL,
+        "suggestions": text,
+    }
